@@ -9,7 +9,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
 
-  const { data: courses = [], isLoading } = useQuery({
+  const { data: courses = [], isLoading, isError } = useQuery({
     queryKey: ['courses'],
     queryFn: () => api.get('/courses').then(r => r.data)
   })
@@ -71,6 +71,10 @@ export default function Dashboard() {
         {isLoading ? (
           <div className="text-center py-16 text-gray-400 text-sm">
             Carregando cursos...
+          </div>
+        ) : isError ? (
+          <div className="text-center py-16">
+            <p className="text-red-400 text-sm">Erro ao carregar cursos. Verifique sua conexão.</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
