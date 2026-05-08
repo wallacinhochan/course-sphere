@@ -128,18 +128,24 @@ export default function CourseDetail() {
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
 
         {/* Info do curso */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
-            <span>
-              📅 {new Date(course.start_date).toLocaleDateString('pt-BR')} →{' '}
-              {new Date(course.end_date).toLocaleDateString('pt-BR')}
-            </span>
-            <span>📚 {lessons.length} aula{lessons.length !== 1 ? 's' : ''}</span>
-          </div>
-          {course.description && (
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+              <span>
+                📅 {new Date(course.start_date).toLocaleDateString('pt-BR')} →{' '}
+                {new Date(course.end_date).toLocaleDateString('pt-BR')}
+              </span>
+              <span>📚 {lessons.length} aula{lessons.length !== 1 ? 's' : ''}</span>
+              {isOwner && (
+              <span>👤 Criado por você</span>
+            )}
+              {!isOwner && (
+              <span>👤 Curso de outro instrutor</span>
+              )}
+            </div>
+              {course.description && (
             <p className="text-gray-600 text-sm">{course.description}</p>
-          )}
-        </div>
+              )}
+            </div>
 
         {/* Turma fictícia */}
         {randomUsers.length > 0 && (
