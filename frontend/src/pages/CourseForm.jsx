@@ -22,6 +22,7 @@ export default function CourseForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [serverError, setServerError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const { data: course } = useQuery({
     queryKey: ['course', id],
@@ -50,7 +51,10 @@ export default function CourseForm() {
       : api.post('/courses', { course: data }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] })
-      navigate(isEdit ? `/courses/${id}` : `/courses/${res.data.id}`)
+      setSuccessMessage(isEdit ? 'Curso atualizado com sucesso!' : 'Curso criado com sucesso!')
+      setTimeout(() => {
+        navigate(isEdit ? `/courses/${id}` : `/courses/${res.data.id}`)
+      }, 1000)
     },
     onError: (err) => {
       const messages = err.response?.data?.errors
@@ -101,7 +105,7 @@ export default function CourseForm() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Data de início <span className="text-red-500">*</span>
@@ -132,7 +136,7 @@ export default function CourseForm() {
             </div>
 
             {serverError && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
+              <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-lg px-3 py-2">
                 {serverError}
               </div>
             )}
