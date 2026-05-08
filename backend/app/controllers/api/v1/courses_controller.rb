@@ -8,10 +8,10 @@ class Api::V1::CoursesController < ApplicationController
   end
 
   def show
-    render json: @course.as_json(
-      only: [:id, :name, :description, :start_date, :end_date],
-      include: { lessons: { only: [:id, :title, :status, :video_url] } }
-    )
+  render json: @course.as_json(
+    only: [:id, :name, :description, :start_date, :end_date, :creator_id],
+    include: { lessons: { only: [:id, :title, :status, :video_url] } }
+  )
   end
 
   def create
