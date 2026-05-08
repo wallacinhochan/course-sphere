@@ -28,3 +28,7 @@ group :development, :test do
   gem "faker"
   gem "jwt"
 end
+
+group :test do
+  gem 'shoulda-matchers'
+end
