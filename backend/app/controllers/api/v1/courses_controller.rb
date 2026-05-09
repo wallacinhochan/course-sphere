@@ -3,13 +3,28 @@ class Api::V1::CoursesController < ApplicationController
   before_action :authorize_creator!, only: [:update, :destroy]
 
   def index
-  courses = current_user.created_courses
-                        .left_joins(:lessons)
-                        .select('courses.*, COUNT(lessons.id) AS lessons_count')
-                        .group('courses.id')
-                        .order(created_at: :desc)
-  render json: courses.as_json(only: [:id, :name, :description, :start_date, :end_date, :lessons_count])
-end
+    page     = (params[:page] || 1).to_i
+    per_page = 6
+
+    base = current_user.created_courses
+                      .left_joins(:lessons)
+                      .select('courses.*, COUNT(lessons.id) AS lessons_count')
+                      .group('courses.id')
+                      .order(created_at: :desc)
+
+    total   = current_user.created_courses.count
+    courses = base.offset((page - 1) * per_page).limit(per_page)
+
+    render json: {
+      courses: courses.as_json(only: [:id, :name, :description, :start_date, :end_date, :lessons_count]),
+      meta: {
+        total:       total,
+        page:        page,
+        per_page:    per_page,
+        total_pages: (total.to_f / per_page).ceil
+      }
+    }
+  end
 
   def show
   render json: @course.as_json(
