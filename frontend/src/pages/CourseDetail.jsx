@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import ConfirmModal from '../components/ConfirmModal'
 
 const lessonSchema = z.object({
   title: z.string().min(3, 'Título deve ter no mínimo 3 caracteres'),
@@ -21,6 +22,7 @@ export default function CourseDetail() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [showLessonForm, setShowLessonForm] = useState(false)
   const [lessonError, setLessonError] = useState('')
+  const [confirmModal, setConfirmModal] = useState(null)
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -111,11 +113,10 @@ export default function CourseDetail() {
                 Editar
               </Link>
               <button
-                onClick={() => {
-                  if (confirm('Tem certeza que deseja excluir este curso?')) {
-                    deleteCourse.mutate()
-                  }
-                }}
+                onClick={() => setConfirmModal({
+                  message: 'O curso e todas as suas aulas serão excluídos permanentemente.',
+                  onConfirm: () => { deleteCourse.mutate(); setConfirmModal(null) }
+                })}
                 className="text-sm px-3 py-1.5 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
               >
                 Excluir
@@ -135,12 +136,7 @@ export default function CourseDetail() {
                 {new Date(course.end_date).toLocaleDateString('pt-BR')}
               </span>
               <span>📚 {lessons.length} aula{lessons.length !== 1 ? 's' : ''}</span>
-              {isOwner && (
-              <span>👤 Criado por você</span>
-            )}
-              {!isOwner && (
-              <span>👤 Curso de outro instrutor</span>
-              )}
+              <span>👤 {isOwner ? 'Criado por você' : `Criado por ${course.creator?.name}`}</span>
             </div>
               {course.description && (
             <p className="text-gray-600 text-sm">{course.description}</p>
@@ -314,9 +310,10 @@ export default function CourseDetail() {
                 Editar
               </button>
               <button
-                onClick={() => {
-                  if (confirm('Excluir esta aula?')) deleteLesson.mutate(lesson.id)
-                }}
+                onClick={() => setConfirmModal({
+                  message: `A aula "${lesson.title}" será excluída permanentemente.`,
+                  onConfirm: () => { deleteLesson.mutate(lesson.id); setConfirmModal(null) }
+                })}
                 className="text-xs text-red-400 hover:text-red-600 transition-colors"
               >
                 Excluir
@@ -330,6 +327,13 @@ export default function CourseDetail() {
 ))}
         </div>
       </main>
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   )
 }

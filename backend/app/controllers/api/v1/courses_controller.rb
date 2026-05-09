@@ -3,15 +3,22 @@ class Api::V1::CoursesController < ApplicationController
   before_action :authorize_creator!, only: [:update, :destroy]
 
   def index
-    courses = current_user.created_courses.order(created_at: :desc)
-    render json: courses.as_json(only: [:id, :name, :description, :start_date, :end_date])
-  end
+  courses = current_user.created_courses
+                        .left_joins(:lessons)
+                        .select('courses.*, COUNT(lessons.id) AS lessons_count')
+                        .group('courses.id')
+                        .order(created_at: :desc)
+  render json: courses.as_json(only: [:id, :name, :description, :start_date, :end_date, :lessons_count])
+end
 
   def show
   render json: @course.as_json(
     only: [:id, :name, :description, :start_date, :end_date, :creator_id],
-    include: { lessons: { only: [:id, :title, :status, :video_url] } }
-  )
+    include: { 
+      lessons: { only: [:id, :title, :status, :video_url] },
+      creator: { only: [:id, :name] }
+      }
+    )
   end
 
   def create
