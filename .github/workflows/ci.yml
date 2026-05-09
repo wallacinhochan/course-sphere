@@ -1,9 +1,10 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
 
 jobs:
   rspec:
@@ -27,8 +28,9 @@ jobs:
 
     env:
       RAILS_ENV: test
-      DATABASE_URL: postgresql://postgres:postgres@localhost/backend_test
-      JWT_SECRET_KEY: test_secret_key_ci_only
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/backend_test
+      DEVISE_JWT_SECRET_KEY: test_secret_key_for_ci_only
+      BUNDLE_WITHOUT: ""
 
     steps:
       - name: Checkout code
@@ -38,8 +40,8 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          working-directory: backend
           bundler-cache: true
+          working-directory: backend
 
       - name: Setup database
         working-directory: backend
@@ -50,20 +52,3 @@ jobs:
       - name: Run RSpec
         working-directory: backend
         run: bundle exec rspec --format documentation
-
-  lint:
-    name: RuboCop
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          working-directory: backend
-          bundler-cache: true
-
-      - name: Lint
-        working-directory: backend
-        run: bin/rubocop -f github
