@@ -23,6 +23,7 @@ export default function CourseForm() {
   const queryClient = useQueryClient()
   const [serverError, setServerError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [generatingDesc, setGeneratingDesc] = useState(false)
 
   const { data: course } = useQuery({
     queryKey: ['course', id],
@@ -30,7 +31,7 @@ export default function CourseForm() {
     enabled: isEdit
   })
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema)
   })
 
@@ -61,6 +62,37 @@ export default function CourseForm() {
       setServerError(messages ? messages.join(', ') : 'Erro ao salvar curso')
     }
   })
+
+ const generateDescription = async () => {
+  const name = watch('name')
+  if (!name || name.length < 3) return
+
+  setGeneratingDesc(true)
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{
+          role: 'user',
+          content: `Gere uma descrição profissional e objetiva para um curso online chamado "${name}". Máximo 2 frases. Apenas a descrição, sem introdução ou explicação.`
+        }],
+        max_tokens: 150
+      })
+    })
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
+    if (text) setValue('description', text.trim())
+  } catch {
+    // silencia erro
+  } finally {
+    setGeneratingDesc(false)
+  }
+}
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -94,12 +126,22 @@ export default function CourseForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descrição
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Descrição
+                </label>
+                <button
+                  type="button"
+                  onClick={generateDescription}
+                  disabled={generatingDesc || watch('name')?.length < 3}
+                  className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
+                >
+                  {generatingDesc ? '⏳ Gerando...' : '✨ Gerar com IA'}
+                </button>
+              </div>
               <textarea
                 {...register('description')}
-                placeholder="Descreva o curso..."
+                placeholder="Descreva o curso ou clique em 'Gerar com IA'..."
                 rows={3}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
