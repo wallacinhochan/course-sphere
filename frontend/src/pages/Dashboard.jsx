@@ -115,6 +115,22 @@ export default function Dashboard() {
                     {new Date(course.end_date).toLocaleDateString('pt-BR')}
                   </span>
                 </div>
+                <div className="flex items-center justify-between text-xs text-gray-400 mt-auto">
+                <div className="flex gap-3">
+                  <span>
+                    {new Date(course.start_date).toLocaleDateString('pt-BR')}
+                  </span>
+                  <span>→</span>
+                  <span>
+                    {new Date(course.end_date).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                {course.lessons_count > 0 && (
+                  <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                    {course.lessons_count} aula{course.lessons_count !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
               </Link>
             ))}
           </div>
