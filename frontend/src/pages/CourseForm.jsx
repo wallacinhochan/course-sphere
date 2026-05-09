@@ -177,11 +177,17 @@ export default function CourseForm() {
               </div>
             </div>
 
-            {serverError && (
-              <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-lg px-3 py-2">
-                {serverError}
-              </div>
-            )}
+              {serverError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
+                  {serverError}
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-lg px-3 py-2">
+                  {successMessage}
+                </div>
+              )}
 
             <div className="flex gap-3 pt-2">
               <button
