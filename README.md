@@ -1,1 +1,1 @@
-"# CourseSphere" 
+# CourseSphere
