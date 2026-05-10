@@ -6,7 +6,7 @@ module AuthHelpers
       iat: Time.now.to_i,
       exp: 1.day.from_now.to_i
     }
-    JWT.encode(payload, ENV['JWT_SECRET_KEY'], 'HS256')
+    JWT.encode(payload, ENV['DEVISE_JWT_SECRET_KEY'] || ENV['JWT_SECRET_KEY'], 'HS256')
   end
 
   def json
