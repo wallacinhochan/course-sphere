@@ -76,4 +76,4 @@ COPY --chown=rails:rails --from=build-prod "${BUNDLE_PATH}" "${BUNDLE_PATH}"
 COPY --chown=rails:rails --from=build-prod /rails /rails
 
 EXPOSE 80
-CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+CMD ["bash", "./bin/render-start.sh"]
