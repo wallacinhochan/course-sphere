@@ -13,7 +13,7 @@ RSpec.describe 'Courses', type: :request do
     it 'retorna lista de cursos' do
       get '/api/v1/courses', headers: headers
       expect(response).to have_http_status(:ok)
-      expect(json).to be_an(Array)
+      expect(json['courses']).to be_an(Array)
     end
 
     it 'retorna 401 sem token' do
