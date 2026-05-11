@@ -7,6 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../context/ToastContext'
+import { Skeleton } from '../components/Skeleton'
 
 const lessonSchema = z.object({
   title: z.string().min(3, 'Título deve ter no mínimo 3 caracteres'),
@@ -23,6 +25,7 @@ export default function CourseDetail() {
   const [showLessonForm, setShowLessonForm] = useState(false)
   const [lessonError, setLessonError] = useState('')
   const [confirmModal, setConfirmModal] = useState(null)
+  const { showToast } = useToast()
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -47,8 +50,10 @@ export default function CourseDetail() {
     mutationFn: () => api.delete(`/courses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['courses'] })
+      showToast('Curso excluído com sucesso', 'success')
       navigate('/')
-    }
+    },
+    onError: () => showToast('Erro ao excluir curso', 'error')
   })
 
   const createLesson = useMutation({
@@ -58,16 +63,22 @@ export default function CourseDetail() {
       reset()
       setShowLessonForm(false)
       setLessonError('')
+      showToast('Aula criada com sucesso', 'success')
     },
     onError: (err) => {
       const messages = err.response?.data?.errors
       setLessonError(messages ? messages.join(', ') : 'Erro ao criar aula')
+      showToast('Erro ao criar aula', 'error')
     }
   })
 
   const deleteLesson = useMutation({
     mutationFn: (lessonId) => api.delete(`/lessons/${lessonId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['course', id] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['course', id] })
+      showToast('Aula excluída', 'success')
+    },
+    onError: () => showToast('Erro ao excluir aula', 'error')
   })
 
   const [editingLesson, setEditingLesson] = useState(null)
@@ -77,12 +88,49 @@ export default function CourseDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['course', id] })
       setEditingLesson(null)
-    }
+      showToast('Aula atualizada', 'success')
+    },
+    onError: () => showToast('Erro ao atualizar aula', 'error')
   })
 
   if (isLoading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <p className="text-gray-400 text-sm">Carregando...</p>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-5 w-48" />
+        </div>
+      </header>
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-3">
+          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-3">
+          <Skeleton className="h-4 w-24 mb-4" />
+          <div className="flex gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Skeleton className="w-8 h-8 rounded-full" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+          <Skeleton className="h-4 w-16 mb-2" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100">
+              <div className="flex gap-3 items-center">
+                <Skeleton className="h-3 w-4" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+              <Skeleton className="h-5 w-20 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </main>
     </div>
   )
 
@@ -97,15 +145,15 @@ export default function CourseDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm whitespace-nowrap">
             ← Voltar
           </Link>
-          <h1 className="text-lg font-semibold text-gray-900 flex-1 truncate">
+          <h1 className="text-lg font-semibold text-gray-900 flex-1 truncate min-w-0">
             {course.name}
           </h1>
           {isOwner && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <Link
                 to={`/courses/${id}/edit`}
                 className="text-sm px-3 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
@@ -117,9 +165,10 @@ export default function CourseDetail() {
                   message: 'O curso e todas as suas aulas serão excluídos permanentemente.',
                   onConfirm: () => { deleteCourse.mutate(); setConfirmModal(null) }
                 })}
-                className="text-sm px-3 py-1.5 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                disabled={deleteCourse.isPending}
+                className="text-sm px-3 py-1.5 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                Excluir
+                {deleteCourse.isPending ? 'Excluindo...' : 'Excluir'}
               </button>
             </div>
           )}
@@ -132,8 +181,8 @@ export default function CourseDetail() {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
               <span>
-                📅 {new Date(course.start_date).toLocaleDateString('pt-BR')} →{' '}
-                {new Date(course.end_date).toLocaleDateString('pt-BR')}
+                📅 {new Date(course.start_date + 'T00:00:00').toLocaleDateString('pt-BR')} →{' '}
+                {new Date(course.end_date + 'T00:00:00').toLocaleDateString('pt-BR')}
               </span>
               <span>📚 {lessons.length} aula{lessons.length !== 1 ? 's' : ''}</span>
               <span>👤 {isOwner ? 'Criado por você' : `Criado por ${course.creator?.name}`}</span>
@@ -248,6 +297,15 @@ export default function CourseDetail() {
             </form>
           )}
 
+          {/* Lista vazia */}
+          {filteredLessons.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-6">
+              {statusFilter === 'all'
+                ? 'Nenhuma aula cadastrada ainda.'
+                : `Nenhuma aula com status "${statusFilter === 'published' ? 'Publicada' : 'Rascunho'}".`}
+            </p>
+          )}
+
           {/* Lista de aulas */}
           {filteredLessons.map((lesson, index) => (
   <div key={lesson.id} className="py-3 border-b border-gray-100 last:border-0">
@@ -267,10 +325,17 @@ export default function CourseDetail() {
           <option value="published">Publicada</option>
         </select>
         <button
-          onClick={() => updateLesson.mutate({ lessonId: lesson.id, data: editingLesson })}
-          className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700"
+          onClick={() => {
+            if (!editingLesson.title || editingLesson.title.trim().length < 3) {
+              showToast('Título deve ter no mínimo 3 caracteres', 'error')
+              return
+            }
+            updateLesson.mutate({ lessonId: lesson.id, data: editingLesson })
+          }}
+          disabled={updateLesson.isPending}
+          className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          Salvar
+          {updateLesson.isPending ? 'Salvando...' : 'Salvar'}
         </button>
         <button
           onClick={() => setEditingLesson(null)}

@@ -5,9 +5,10 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
+import { useToast } from '../context/ToastContext'
 
 const schema = z.object({
-  name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
+  name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(100, 'Nome muito longo'),
   description: z.string().optional(),
   start_date: z.string().min(1, 'Data de início obrigatória'),
   end_date: z.string().min(1, 'Data de término obrigatória'),
@@ -21,8 +22,8 @@ export default function CourseForm() {
   const isEdit = !!id
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [serverError, setServerError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [generatingDesc, setGeneratingDesc] = useState(false)
 
   const { data: course } = useQuery({
@@ -31,7 +32,7 @@ export default function CourseForm() {
     enabled: isEdit
   })
 
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(schema)
   })
 
@@ -52,47 +53,57 @@ export default function CourseForm() {
       : api.post('/courses', { course: data }),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] })
-      setSuccessMessage(isEdit ? 'Curso atualizado com sucesso!' : 'Curso criado com sucesso!')
-      setTimeout(() => {
-        navigate(isEdit ? `/courses/${id}` : `/courses/${res.data.id}`)
-      }, 1000)
+      showToast(isEdit ? 'Curso atualizado com sucesso!' : 'Curso criado com sucesso!')
+      navigate(isEdit ? `/courses/${id}` : `/courses/${res.data.id}`)
     },
     onError: (err) => {
       const messages = err.response?.data?.errors
-      setServerError(messages ? messages.join(', ') : 'Erro ao salvar curso')
+      const msg = messages ? messages.join(', ') : 'Erro ao salvar curso'
+      setServerError(msg)
+      showToast(msg, 'error')
     }
   })
 
- const generateDescription = async () => {
-  const name = watch('name')
-  if (!name || name.length < 3) return
+  const TODAY = new Date().toISOString().split('T')[0]
+  const MAX_DATE = '2099-12-31'
 
-  setGeneratingDesc(true)
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{
-          role: 'user',
-          content: `Gere uma descrição profissional e objetiva para um curso online chamado "${name}". Máximo 2 frases. Apenas a descrição, sem introdução ou explicação.`
-        }],
-        max_tokens: 150
+  const generateDescription = async () => {
+    const name = watch('name')?.trim()
+
+    if (!name || name.length < 3) {
+      showToast('Digite um nome com ao menos 3 caracteres antes de gerar a descrição', 'error')
+      return
+    }
+
+    setGeneratingDesc(true)
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{
+            role: 'user',
+            content: `Gere uma descrição profissional e objetiva para um curso online chamado "${name}". Máximo 2 frases. Apenas a descrição, sem introdução ou explicação.`
+          }],
+          max_tokens: 150
+        })
       })
-    })
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content
-    if (text) setValue('description', text.trim())
-  } catch {
-    // silencia erro
-  } finally {
-    setGeneratingDesc(false)
+      const data = await res.json()
+      const text = data.choices?.[0]?.message?.content
+      if (text) {
+        setValue('description', text.trim())
+        showToast('Descrição gerada com IA!', 'info')
+      }
+    } catch {
+      showToast('Erro ao gerar descrição', 'error')
+    } finally {
+      setGeneratingDesc(false)
+    }
   }
-}
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,7 +121,6 @@ export default function CourseForm() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <form onSubmit={handleSubmit(d => mutation.mutate(d))} className="space-y-5">
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nome <span className="text-red-500">*</span>
@@ -133,7 +143,7 @@ export default function CourseForm() {
                 <button
                   type="button"
                   onClick={generateDescription}
-                  disabled={generatingDesc || watch('name')?.length < 3}
+                  disabled={generatingDesc || mutation.isPending || watch('name')?.length < 3}
                   className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
                 >
                   {generatingDesc ? '⏳ Gerando...' : '✨ Gerar com IA'}
@@ -155,6 +165,8 @@ export default function CourseForm() {
                 <input
                   {...register('start_date')}
                   type="date"
+                  min={TODAY}
+                  max={MAX_DATE}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {errors.start_date && (
@@ -169,6 +181,8 @@ export default function CourseForm() {
                 <input
                   {...register('end_date')}
                   type="date"
+                  min={TODAY}
+                  max={MAX_DATE}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {errors.end_date && (
@@ -177,25 +191,23 @@ export default function CourseForm() {
               </div>
             </div>
 
-              {serverError && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
-                  {serverError}
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-lg px-3 py-2">
-                  {successMessage}
-                </div>
-              )}
+            {serverError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
+                {serverError}
+              </div>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                disabled={mutation.isPending}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+                disabled={mutation.isPending || (isEdit && !isDirty)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 rounded-lg text-sm transition-colors"
               >
-                {mutation.isPending ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar curso'}
+                {mutation.isPending
+                  ? 'Salvando...'
+                  : isEdit && !isDirty
+                  ? 'Sem alterações'
+                  : isEdit ? 'Salvar alterações' : 'Criar curso'}
               </button>
               <Link
                 to={isEdit ? `/courses/${id}` : '/'}
