@@ -68,7 +68,12 @@ cd course-sphere
 
 ```bash
 docker compose up -d
-docker compose exec api bundle exec rails db:migrate
+```
+
+Aguarde ~30 segundos para o banco inicializar, depois:
+
+```bash
+docker compose exec api bundle exec rails db:prepare
 docker compose exec api bundle exec rails db:seed
 ```
 
