@@ -3,11 +3,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { useToast } from '../context/ToastContext'
+import { Skeleton } from '../components/Skeleton'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const { showToast } = useToast()
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['courses', page],
@@ -24,19 +27,20 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     logout()
-    window.location.href = '/login'
+    showToast('Até logo!', 'info')
+    setTimeout(() => { window.location.href = '/login' }, 800)
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <h1 className="text-lg font-semibold text-gray-900">CourseSphere</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{user?.name}</span>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-sm text-gray-500 truncate max-w-[160px] sm:max-w-none">{user?.name}</span>
             <button
               onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              className="text-sm text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap"
             >
               Sair
             </button>
@@ -68,29 +72,48 @@ export default function Dashboard() {
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
 
-        {isLoading ? (
-          <div className="text-center py-16 text-gray-400 text-sm">
-            Carregando cursos...
+            {isLoading ? (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-white border border-gray-200 rounded-xl p-5 space-y-3"
+          >
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+
+            <div className="flex justify-between pt-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
           </div>
-        ) : isError ? (
-          <div className="text-center py-16">
-            <p className="text-red-400 text-sm">Erro ao carregar cursos. Verifique sua conexão.</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-sm">
-              {search ? 'Nenhum curso encontrado.' : 'Você ainda não tem cursos.'}
-            </p>
-            {!search && (
-              <Link
-                to="/courses/new"
-                className="mt-3 inline-block text-blue-600 text-sm hover:underline"
-              >
-                Criar primeiro curso
-              </Link>
-            )}
-          </div>
-        ) : (
+        ))}
+      </div>
+    ) : isError ? (
+      <div className="text-center py-16">
+        <p className="text-red-400 text-sm">
+          Erro ao carregar cursos. Verifique sua conexão.
+        </p>
+      </div>
+    ) : filtered.length === 0 ? (
+      <div className="text-center py-16">
+        <p className="text-gray-400 text-sm">
+          {search
+            ? 'Nenhum curso encontrado.'
+            : 'Você ainda não tem cursos.'}
+        </p>
+
+        {!search && (
+          <Link
+            to="/courses/new"
+            className="mt-3 inline-block text-blue-600 text-sm hover:underline"
+          >
+            Criar primeiro curso
+          </Link>
+        )}
+      </div>
+    ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map(course => (
@@ -109,9 +132,9 @@ export default function Dashboard() {
                   )}
                   <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
                     <div className="flex gap-2">
-                      <span>{new Date(course.start_date).toLocaleDateString('pt-BR')}</span>
+                      <span>{new Date(course.start_date + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
                       <span>→</span>
-                      <span>{new Date(course.end_date).toLocaleDateString('pt-BR')}</span>
+                      <span>{new Date(course.end_date + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
                     </div>
                     {course.lessons_count > 0 && (
                       <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
