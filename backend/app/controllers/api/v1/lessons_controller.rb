@@ -1,6 +1,7 @@
 class Api::V1::LessonsController < ApplicationController
-  before_action :set_course, only: [:index, :create]
-  before_action :set_lesson, only: [:update, :destroy]
+  before_action :set_course,            only: [:index, :create]
+  before_action :set_lesson,            only: [:update, :destroy]
+  before_action :authorize_creator!,    only: [:create, :update, :destroy]
 
   def index
     render json: @course.lessons.order(created_at: :desc)
@@ -37,7 +38,14 @@ class Api::V1::LessonsController < ApplicationController
   end
 
   def set_lesson
-    @lesson = Lesson.find(params[:id])
+    @lesson  = Lesson.find(params[:id])
+    @course  = @lesson.course
+  end
+
+  def authorize_creator!
+    unless @course.creator == current_user
+      render json: { error: "Não autorizado" }, status: :forbidden
+    end
   end
 
   def lesson_params
