@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { Skeleton } from '../components/Skeleton'
+import { Spinner } from '../components/Spinner'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
@@ -33,14 +34,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-blue-600">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <h1 className="text-lg font-semibold text-gray-900">CourseSphere</h1>
+          <h1 className="text-lg font-semibold text-white tracking-tight">CourseSphere</h1>
           <div className="flex items-center gap-3 min-w-0">
-            <span className="text-sm text-gray-500 truncate max-w-[160px] sm:max-w-none">{user?.name}</span>
+            <span className="text-sm text-blue-100 truncate max-w-[160px] sm:max-w-none">{user?.name}</span>
             <button
               onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap"
+              className="text-sm text-blue-100 hover:text-white transition-colors whitespace-nowrap"
             >
               Sair
             </button>
@@ -97,19 +98,26 @@ export default function Dashboard() {
         </p>
       </div>
     ) : filtered.length === 0 ? (
-      <div className="text-center py-16">
-        <p className="text-gray-400 text-sm">
-          {search
-            ? 'Nenhum curso encontrado.'
-            : 'Você ainda não tem cursos.'}
+      <div className="text-center py-20">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 mb-4">
+          <svg className="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+          </svg>
+        </div>
+        <p className="text-gray-700 font-medium mb-1">
+          {search ? 'Nenhum curso encontrado' : 'Nenhum curso ainda'}
         </p>
-
+        <p className="text-gray-400 text-sm mb-5">
+          {search
+            ? `Nenhum resultado para "${search}"`
+            : 'Crie seu primeiro curso e comece a organizar suas aulas'}
+        </p>
         {!search && (
           <Link
             to="/courses/new"
-            className="mt-3 inline-block text-blue-600 text-sm hover:underline"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
-            Criar primeiro curso
+            + Criar primeiro curso
           </Link>
         )}
       </div>
