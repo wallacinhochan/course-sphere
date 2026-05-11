@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
+import { Spinner } from '../components/Spinner'
 
 const schema = z.object({
   name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(100, 'Nome muito longo'),
@@ -107,12 +108,12 @@ export default function CourseForm() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to={isEdit ? `/courses/${id}` : '/'} className="text-gray-400 hover:text-gray-600 text-sm">
+      <header className="bg-blue-600">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Link to={isEdit ? `/courses/${id}` : '/'} className="text-blue-100 hover:text-white text-sm whitespace-nowrap">
             ← Voltar
           </Link>
-          <h1 className="text-lg font-semibold text-gray-900">
+          <h1 className="text-lg font-semibold text-white">
             {isEdit ? 'Editar curso' : 'Novo curso'}
           </h1>
         </div>
@@ -201,8 +202,9 @@ export default function CourseForm() {
               <button
                 type="submit"
                 disabled={mutation.isPending || (isEdit && !isDirty)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 rounded-lg text-sm transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 rounded-lg text-sm transition-colors"
               >
+                {mutation.isPending && <Spinner />}
                 {mutation.isPending
                   ? 'Salvando...'
                   : isEdit && !isDirty

@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { Spinner } from '../components/Spinner'
 
 const schema = z.object({
   name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
@@ -38,8 +39,13 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <span className="text-2xl font-bold text-blue-600 tracking-tight">CourseSphere</span>
+          <p className="text-gray-400 text-sm mt-1">Gestão de cursos online</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <h1 className="text-2xl font-semibold text-gray-900 mb-1">Criar conta</h1>
         <p className="text-gray-500 text-sm mb-6">
           Comece a gerenciar seus cursos hoje
@@ -100,8 +106,9 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
+            {loading && <Spinner />}
             {loading ? 'Criando conta...' : 'Criar conta'}
           </button>
         </form>
@@ -112,6 +119,7 @@ export default function Register() {
             Entrar
           </Link>
         </p>
+        </div>
       </div>
     </div>
   )
