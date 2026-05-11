@@ -1,0 +1,153 @@
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import api from '../services/api'
+
+export default function Dashboard() {
+  const { user, logout } = useAuth()
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['courses', page],
+    queryFn: () => api.get(`/courses?page=${page}`).then(r => r.data),
+    keepPreviousData: true
+  })
+
+  const courses = data?.courses || []
+  const meta = data?.meta || {}
+
+  const filtered = courses.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleLogout = () => {
+    logout()
+    window.location.href = '/login'
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-900">CourseSphere</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">{user?.name}</span>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Meus cursos</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {meta.total || 0} curso{meta.total !== 1 ? 's' : ''} no total
+            </p>
+          </div>
+          <Link
+            to="/courses/new"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            + Novo curso
+          </Link>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Buscar cursos..."
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(1) }}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+
+        {isLoading ? (
+          <div className="text-center py-16 text-gray-400 text-sm">
+            Carregando cursos...
+          </div>
+        ) : isError ? (
+          <div className="text-center py-16">
+            <p className="text-red-400 text-sm">Erro ao carregar cursos. Verifique sua conexão.</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-gray-400 text-sm">
+              {search ? 'Nenhum curso encontrado.' : 'Você ainda não tem cursos.'}
+            </p>
+            {!search && (
+              <Link
+                to="/courses/new"
+                className="mt-3 inline-block text-blue-600 text-sm hover:underline"
+              >
+                Criar primeiro curso
+              </Link>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map(course => (
+                <Link
+                  key={course.id}
+                  to={`/courses/${course.id}`}
+                  className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all"
+                >
+                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-1">
+                    {course.name}
+                  </h3>
+                  {course.description && (
+                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                      {course.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
+                    <div className="flex gap-2">
+                      <span>{new Date(course.start_date).toLocaleDateString('pt-BR')}</span>
+                      <span>→</span>
+                      <span>{new Date(course.end_date).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    {course.lessons_count > 0 && (
+                      <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                        {course.lessons_count} aula{course.lessons_count !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Paginação */}
+            {meta.total_pages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => setPage(p => p - 1)}
+                  disabled={page === 1}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Anterior
+                </button>
+                <span className="text-sm text-gray-500">
+                  Página {page} de {meta.total_pages}
+                </span>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page === meta.total_pages}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Próxima →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  )
+}
