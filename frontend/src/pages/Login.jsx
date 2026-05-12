@@ -30,8 +30,6 @@ export default function Login() {
       login(res.data.token, res.data.user)
       navigate('/')
     } catch (err) {
-      console.log('erro capturado:', err.response?.status)
-      console.log('CATCH executado, status:', err.response?.status)
       setError('Email ou senha inválidos')
     } finally {
       setLoading(false)
